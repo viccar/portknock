@@ -5,51 +5,68 @@ import config
 import uuid
 import hashlib
 import datetime
+import time
+import _thread
+
 
 def hashPW(pw):
     #salt = uuid.uuid4().hex #uuid lib to generate random number
     #return hashlib.sha256(salt.encode() + pw.encode()).hexdigest() + ':' + salt
     return hashlib.sha256(pw.encode()).hexdigest()
 
-serverSock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-try:
-    serverSock.bind((config.UDP_IP, config.UDP_PORT))
-except socket.error as e:
-    print(str(e))
+def enableKnockServer():
+    serverSock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    serverSock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    try:
+        serverSock.bind((config.UDP_IP, config.UDP_PORT))
+    except socket.error as e:
+        print(e)
 
-print('starting up on %s port %d' % (config.UDP_IP, config.UDP_PORT))
-serverHashKnock = None
-knownIP = None
-
-while True:
-    print("Waiting to receive knocks...")
-    data, addr = serverSock.recvfrom(1024) #receive a message from client
-    dataDec = data.decode("utf-8") #decode client message (is back to string not bytes)
-    print("Decoded client data: ", dataDec)
+    print('starting up on %s port %d' % (config.UDP_IP, config.UDP_PORT))
+    serverHashKnock = None
+    deny = None
     
-    
-    if dataDec == "knock": #a general knock is received
-        currTime = datetime.datetime.now().time()
-        currTime = str(currTime)
-        knownIP = addr
-
-        print("current time is ", currTime)
-
-        bytesTime = currTime.encode("utf-8")
-        serverSock.sendto(bytesTime, addr) #send a reply of the current time to the ip that knocked
+    while True:
+        print("[ Still waiting to receive knocks on UDP server...]")
+        data, addr = serverSock.recvfrom(1024) #receive a message from client
+        currTime = str(datetime.datetime.now().time().replace(microsecond=0)) 
+        print("curr time when data RECEIVED from CLIENT: ", currTime)
+        dataDec = data.decode("utf-8") #decode client message (is back to string not bytes)
+        print("Decoded client data: ", dataDec)
+        
         serverHashKnock = hashPW(currTime+config.SECRET_KEY)
-        print("current server hash is: ", serverHashKnock)
-    else:
+        print("server hash: ", serverHashKnock)
         if dataDec == serverHashKnock:
             print("a match in the hashes was found!")
-            if addr == knownIP:
-                serverHashKnock = None
-                print("reset server hash knock")
-                weblite.enableWeblite()
+
+            serverHashKnock = None
+            print("reset server hash knock")
+            print("weblite enabled!\n")
+            if config.numClient < config.MAX_CLIENT:
+                _thread.start_new_thread(weblite.enableWeblite,(addr,))
+                config.numClient = config.numClient + 1
+            else:
+                print("reached max number of user to connect to knockServer")
+
+            #weblite.enableWeblite(addr)
                 
         else:
-            print("invalid knocks")
+                print("invalid knock found")
+                deny = True
+                break
 
-    print("-RECEIVED-\nbytes: %d\nfrom: %s\nmessage: %s" % (len(data), addr, data))
-    print()
+        #print("-RECEIVED-\nbytes: %d\nfrom: %s\nmessage: %s" % (len(data), addr, data))
+        print()
+
+    if deny == True:
+        serverSock.close()
+        print("Server will now disable for 10 sec to avoid DOS")
+        time.sleep(10)
+        print("Socket will start again now\n")
+        deny = False
+        enableKnockServer()
+
+#main
+enableKnockServer()
+

@@ -1,30 +1,58 @@
 import socket
 import time
+import config
 
-#constants
-host = ''
-port = 8080
-buff = 4096
-          
+def enableWeblite(addr):
+    print("addr connected from knockServer is: ", addr)
 
-def enableWeblite():
     #create server socket
-    serveSock= socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    serveSock.bind((host,port))
-    serveSock.listen(10) #can listen to up to 10, listen also begins accept connections
+    serveSock=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    serveSock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    serveSock.bind((config.WEB_HOST,config.WEB_PORT))
+    serveSock.listen(10) 
     print("Weblite is active and is listening!")
 
-    serveSock.settimeout(10)
+    serveSock.settimeout(10) #timeout is 10 seconds
     while True:
         try:
             print("Weblite waiting for connection requests")
             csock, caddr = serveSock.accept() #client socket, client address
-            print("Connected from client: ", caddr)
 
-            #serveSock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1) #not sure what this does but looks important
-            clientData = csock.recv(buff).decode()
-            print("Processed result: {}".format(clientData))
-            csock.send("received, thank u -weblite".encode("utf-8"))
+            clientData = str(csock.recv(config.BUF_SIZE).decode())
+            command, fileName = clientData.split()[:2] #grabs the http command plus filename
+            fileName = fileName[1:]
+
+            print("commmand: %s\nhtml: %s\n" % (command, fileName))
+
+            if command != "GET":
+                print("ERROR - Not a GET --- received command = '%s' \n" % command)
+                break
+
+            try:
+                fileO = open(fileName, 'r') #we skip the first character to cause of "/"
+            except IOError:
+                print("could not open file")
+                break
+            
+            fileTitle, fileType = fileName.split('.')
+            print("file title: %s\nfile type: %s\n" % (fileName, fileType))
+            
+            if fileType != "html":
+                print("incorrect file type")
+                break
+            
+            csock.send(config.OK_TEXT.encode())
+            with fileO:
+                content = fileO.read()
+
+                print(content)
+                csock.send(content.encode())
+            
+            
+            #print("---received GET----")
+            #print("Processed result: {}".format(clientData))
+            #print("-------------------")
+            #csock.send("received, thank u -weblite".encode("utf-8"))
 
         except socket.timeout as err:
             print(err)
@@ -32,4 +60,4 @@ def enableWeblite():
 
 
     serveSock.close()
-    print("weblite disabled")
+    print("weblite disabled\n")
