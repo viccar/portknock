@@ -18,7 +18,9 @@ def hashPW(pw): #hashing
 def enableKnockServer():
     serverSock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) #set up server
     serverSock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    try: #exeception handling for UDP server listen
+
+    #exception handling for UDP server listen
+    try: 
         serverSock.bind((config.UDP_IP, config.UDP_PORT))
     except socket.error as e:
         print(e)
@@ -31,8 +33,10 @@ def enableKnockServer():
         print("[ Still waiting to receive knocks on UDP server...]")
         
         data, addr = serverSock.recvfrom(1024) #receive a message from client
-        currTime = str(datetime.datetime.now().time().replace(microsecond=0)) #when messaged is received, get current time
-        
+        currTime = datetime.datetime.now().replace(microsecond=0) #when messaged is received, get current time
+        #print("actual time recevied: ", currTime)
+        #currTime = currTime + datetime.timedelta(seconds=1)
+        currTime = str(currTime)
         print("curr time when data RECEIVED from CLIENT: ", currTime)
         
         
@@ -58,7 +62,7 @@ def enableKnockServer():
                 
                 serverHashKnock = None #reset key to none as it will always change depending on time
 
-                print("weblite enabled!\n")
+                print("weblite enabled by client %s!\n" % addr[0])
                 
                 if config.numClient < config.MAX_CLIENT: #while number of available client does not exceed 10
                     _thread.start_new_thread(weblite.enableWeblite,(addr,)) #start a new thread of weblite

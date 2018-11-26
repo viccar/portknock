@@ -3,7 +3,7 @@ import time
 import config
 
 def enableWeblite(addr):
-    print("addr connected from knockServer is: ", addr)
+    print("weblite thread of client ip: ", addr[0])
 
     #create server socket
     serveSock=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -17,16 +17,13 @@ def enableWeblite(addr):
         try:
             print("Weblite waiting for connection requests")
             csock, caddr = serveSock.accept() #client socket, client address
-            if caddr[0] not in config.KNOWN_IP: #lets just validate and make sure this IP is known
-                print("this IP is not known to weblite or knockserver. breaking")
-                break
 
             clientData = str(csock.recv(config.BUF_SIZE).decode())
             command, fileName = clientData.split()[:2] #grabs the http command plus filename
             fileName = fileName[1:]
             fileTitle, fileType = fileName.split('.')
             print("commmand: %s\nhtml: %s\n" % (command, fileName))
-            print("file title: %s\nfile type: %s\n" % (fileName, fileType))
+            print("file title: %s\nfile type: %s\n" % (fileTitle, fileType))
 
             if command != "GET":
                 print("ERROR - Not a GET --- received command = '%s' \n" % command)
@@ -38,7 +35,7 @@ def enableWeblite(addr):
             try:
                 fileO = open(fileName, 'r') #we skip the first character to cause of "/"
             except IOError:
-                print("could not open file")
+                print("could not open file/file not found")
                 break
     
             csock.send(config.OK_TEXT.encode())
@@ -58,4 +55,4 @@ def enableWeblite(addr):
 
 
     serveSock.close()
-    print("weblite disabled\n")
+    print("%s weblite CLOSED\n" % addr[0])
