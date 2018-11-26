@@ -36,29 +36,40 @@ def enableKnockServer():
         print("curr time when data RECEIVED from CLIENT: ", currTime)
         print("-RECEIVED-\nbytes: %d\nfrom: %s\nmessage: %s" % (len(data), addr, data)) #the message received
         
-        dataDec = data.decode("utf-8") #decode client message (is back to string not bytes)
+        dataDec = data.decode() #decode client message (is back to string not bytes)
+        dataSplit = dataDec.split(":")
         
         print("Decoded client data: ", dataDec)
         
         serverHashKnock = hashPW(currTime+config.SECRET_KEY) #now hash time+key
         print("server hash: ", serverHashKnock)
-        if dataDec == serverHashKnock: #if a match is found
-            print("a match in the hashes was found!")
+
+        if dataSplit[0] == hashPW(config.SECRET_KNOCK): #if a match is found
+           
+            print("correct knock sequence!")
             
-            if addr[0] not in config.KNOWN_IP:
-                config.KNOWN_IP.append(addr[0]) #remember this host as a known ip
-            
-            serverHashKnock = None #reset key to none as it will always change depending on time
-            
-            print("reset server hash knock")
-            print("weblite enabled!\n")
-            
-            if config.numClient < config.MAX_CLIENT: #while number of available client does not exceed 10
-                _thread.start_new_thread(weblite.enableWeblite,(addr,)) #start a new thread of weblite
-                config.numClient = config.numClient + 1 #increment num of known clients
+            if dataSplit[1] == serverHashKnock:
+                
+                print("correct knock sequence")
+
+                if addr[0] not in config.KNOWN_IP:
+                    config.KNOWN_IP.append(addr[0]) #remember this host as a known ip
+                
+                serverHashKnock = None #reset key to none as it will always change depending on time
+                
+                print("reset server hash knock")
+                print("weblite enabled!\n")
+                
+                if config.numClient < config.MAX_CLIENT: #while number of available client does not exceed 10
+                    _thread.start_new_thread(weblite.enableWeblite,(addr,)) #start a new thread of weblite
+                    config.numClient = config.numClient + 1 #increment num of known clients
+                else:
+                    print("reached max number of user to connect to knockServer")
+                    break #else cant connect
+
             else:
-                print("reached max number of user to connect to knockServer")
-                break #else cant connect
+                print("correct knock sequence but incorrect key")
+                break
                 
         else: #if match is wrong, an invalid knock has occured
                 print("invalid knock found")
