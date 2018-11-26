@@ -5,6 +5,7 @@ WEB_HOST = ''
 WEB_PORT = 8080
 BUF_SIZE = 4096
 MAX_CLIENT = 10
+KNOWN_IP = []
 SECRET_KEY = 'Nintendo' #shared secret, should work
 TEST_KEY = 'Sega' #will not work
 numClient = 0

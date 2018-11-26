@@ -17,6 +17,9 @@ def enableWeblite(addr):
         try:
             print("Weblite waiting for connection requests")
             csock, caddr = serveSock.accept() #client socket, client address
+            if caddr[0] not in config.KNOWN_IP:
+                print("this IP is not known to weblite or knockserver. breaking")
+                break
 
             clientData = str(csock.recv(config.BUF_SIZE).decode())
             command, fileName = clientData.split()[:2] #grabs the http command plus filename
