@@ -34,30 +34,30 @@ def enableKnockServer():
         currTime = str(datetime.datetime.now().time().replace(microsecond=0)) #when messaged is received, get current time
         
         print("curr time when data RECEIVED from CLIENT: ", currTime)
-        print("-RECEIVED-\nbytes: %d\nfrom: %s\nmessage: %s" % (len(data), addr, data)) #the message received
+        
         
         dataDec = data.decode() #decode client message (is back to string not bytes)
         dataSplit = dataDec.split(":")
         
-        print("Decoded client data: ", dataDec)
+        print("\n-RECEIVED-\nbytes: %d\nfrom: %s\nmessage: %s" % (len(data), addr, data)) #the message received
+
         
         serverHashKnock = hashPW(currTime+config.SECRET_KEY) #now hash time+key
         print("server hash: ", serverHashKnock)
 
         if dataSplit[0] == hashPW(config.SECRET_KNOCK): #if a match is found
            
-            print("correct knock sequence!")
+            print("correct knock sequence")
             
             if dataSplit[1] == serverHashKnock:
                 
-                print("correct knock sequence")
+                print("and correct secret")
 
                 if addr[0] not in config.KNOWN_IP:
                     config.KNOWN_IP.append(addr[0]) #remember this host as a known ip
                 
                 serverHashKnock = None #reset key to none as it will always change depending on time
-                
-                print("reset server hash knock")
+
                 print("weblite enabled!\n")
                 
                 if config.numClient < config.MAX_CLIENT: #while number of available client does not exceed 10
@@ -68,7 +68,9 @@ def enableKnockServer():
                     break #else cant connect
 
             else:
-                print("correct knock sequence but incorrect key")
+                print("but incorrect key")
+                serverHashKnock = None 
+                deny = True
                 break
                 
         else: #if match is wrong, an invalid knock has occured
